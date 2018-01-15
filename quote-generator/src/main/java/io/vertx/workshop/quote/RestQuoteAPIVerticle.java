@@ -4,7 +4,9 @@ import io.vertx.core.AbstractVerticle;
 import io.vertx.core.http.HttpServerResponse;
 import io.vertx.core.json.Json;
 import io.vertx.core.json.JsonObject;
+import netscape.javascript.JSObject;
 
+import javax.swing.*;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -27,6 +29,8 @@ public class RestQuoteAPIVerticle extends AbstractVerticle {
           // ----
 
           // ----
+            JsonObject quote = message.body();
+            quotes.put(quote.getString("name"), quote);
         });
 
 
@@ -42,8 +46,18 @@ public class RestQuoteAPIVerticle extends AbstractVerticle {
           // If the symbol is set but not found, you should return 404.
           // Once the request handler is set,
 
-          response
-              .end(Json.encodePrettily(quotes));
+            String company = request.getParam("name");
+            if (company == null) {
+                String content = Json.encodePrettily(quotes);
+                response.end(Json.encodePrettily(quotes));
+            }else{
+                JsonObject quote = quotes.get(company);
+                if (quote == null) {
+                    response.setStatusCode(404).end();
+                }else{
+                    response.end(quote.encodePrettily());
+                }
+            }
 
           // ----
 

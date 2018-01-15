@@ -1,8 +1,13 @@
 package io.vertx.workshop.portfolio.impl;
 
 import io.vertx.core.*;
+import io.vertx.core.buffer.Buffer;
+import io.vertx.core.http.HttpClient;
+import io.vertx.core.json.Json;
 import io.vertx.core.json.JsonObject;
+import io.vertx.ext.web.client.HttpResponse;
 import io.vertx.servicediscovery.ServiceDiscovery;
+import io.vertx.servicediscovery.types.HttpEndpoint;
 import io.vertx.workshop.portfolio.Portfolio;
 import io.vertx.workshop.portfolio.PortfolioService;
 
@@ -30,25 +35,32 @@ public class PortfolioServiceImpl implements PortfolioService {
 
   @Override
   public void getPortfolio(Handler<AsyncResult<Portfolio>> resultHandler) {
-    // TODO
-    // ----
-
-    // ----
+    resultHandler.handle(Future.succeededFuture(portfolio));
   }
 
   private void sendActionOnTheEventBus(String action, int amount, JsonObject quote, int newAmount) {
     // TODO
     // ----
+    vertx.eventBus().publish(EVENT_ADDRESS, new JsonObject()
+            .put("action", action)
+            .put("quote", quote)
+            .put("date", System.currentTimeMillis())
+            .put("amount", amount)
+            .put("owned", newAmount));
 
     // ----
   }
 
   @Override
   public void evaluate(Handler<AsyncResult<Double>> resultHandler) {
-    // TODO
-    // ----
-
-    // ---
+    HttpEndpoint.getWebClient(discovery, new JsonObject().put("name", "quotes"), client ->{
+      if (client.failed()) {
+        resultHandler.handle(Future.failedFuture(client.cause()));
+      }else{
+        WebClient webClient = client.result();
+        computeEvaluation(webClient, resultHandler);
+      }
+    });
   }
 
   private void computeEvaluation(WebClient webClient, Handler<AsyncResult<Double>> resultHandler) {
@@ -70,11 +82,17 @@ public class PortfolioServiceImpl implements PortfolioService {
     // Create the future object that will  get the value once the value have been retrieved
     Future<Double> future = Future.future();
 
-    //TODO
-    //----
+      client.get("/?name=" + encode(company)).send(ar ->{
+          if(ar.failed()){
+              future.fail(ar.cause());
+          } else if (ar.succeeded()) {
+              HttpResponse httpResponse = ar.result();
+              JsonObject jsonObject = httpResponse.bodyAsJsonObject();
+              double v = numberOfShares * jsonObject.getDouble("bid");
+              future.complete(v);
+          }
 
-    // ---
-
+      });
     return future;
   }
 
