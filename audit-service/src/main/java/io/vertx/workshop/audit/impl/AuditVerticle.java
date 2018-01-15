@@ -4,6 +4,7 @@ import io.vertx.core.Future;
 import io.vertx.core.json.Json;
 import io.vertx.core.json.JsonArray;
 import io.vertx.core.json.JsonObject;
+import io.vertx.ext.sql.ResultSet;
 import io.vertx.ext.sql.UpdateResult;
 import io.vertx.rxjava.core.eventbus.MessageConsumer;
 import io.vertx.rxjava.core.http.HttpServer;
@@ -86,7 +87,21 @@ public class AuditVerticle extends RxMicroServiceVerticle {
 
     //TODO
     // ----
-
+    jdbc.getConnection(ar ->{
+      SQLConnection connection = ar.result();
+      if (ar.failed()) {
+        context.fail(ar.cause());
+      }else {
+        connection.query(SELECT_STATEMENT, result -> {
+          ResultSet resultSet = result.result();
+          List<JsonObject> operations = resultSet.getRows().stream()
+                  .map(json -> new JsonObject(json.getString("OPERATION")))
+                  .collect(Collectors.toList());
+          context.response().setStatusCode(200).end(Json.encodePrettily(operations));
+          connection.close();
+        });
+      }
+    });
     // ----
   }
 
@@ -146,6 +161,7 @@ public class AuditVerticle extends RxMicroServiceVerticle {
     // This single will be completed when the connection with the database is established.
     // We are going to use this single as a reference on the connection to close it.
     Single<SQLConnection> connectionRetrieved = jdbc.rxGetConnection();
+
 
     // Ok, now it's time to chain all these actions:
     Single<List<Integer>> resultSingle = connectionRetrieved
