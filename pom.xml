@@ -18,7 +18,8 @@
 
   <properties>
     <stack.version>3.4.1</stack.version>
-
+    <vertx-maven-plugin.version>1.0.8</vertx-maven-plugin.version>
+    <fabric8.maven.plugin.version>3.5.32</fabric8.maven.plugin.version>
     <!--overridden in each project packaged as a fat jar -->
     <main.verticle/>
   </properties>
